@@ -1,7 +1,7 @@
 
 public class Geometry {
     private String type;
-    private String cordinates;
+    private String coordinates;
 
     public String getType() {
         return type;
@@ -11,11 +11,11 @@ public class Geometry {
         this.type = type;
     }
 
-    public String getCordinates() {
-        return cordinates;
+    public String getCoordinates() {
+        return coordinates;
     }
 
     public void setCordinates(String cordinates) {
-        this.cordinates = cordinates;
+        this.coordinates = cordinates;
     }
 }

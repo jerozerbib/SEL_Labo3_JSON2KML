@@ -40,7 +40,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -54,42 +53,53 @@ public class Application {
         try (FileReader reader = new FileReader("countries.geojson")) {
             // lecture du fichier
             Object obj = jsonParser.parse(reader);
+            JSONObject feature = (JSONObject) obj;
 
-            JSONArray feature = (JSONArray) obj;
-            System.out.println(feature);
+            JSONArray jsonArray = (JSONArray) feature.get("features");
 
-            // parcours du tableau de feature
-            feature.forEach(feat->parseFeatureObject((JSONObject)feat));
-        }
+            for (Object feat : jsonArray) {
+                parseFeatureObject((JSONObject) feat);
+            }
 
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        catch (ParseException e) {
+        } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
     }
 
     private static void parseFeatureObject(JSONObject feat) {
+        int compteur = 0;
+        JSONObject featJSON = (JSONObject) feat.get("properties");
 
-        // Obtenir l'objet Feature dans la liste
-        JSONObject featObject = (JSONObject) feat.get("Feature");
+        Properties properties = new Properties((String) featJSON.get("ADMIN"), (String) featJSON.get("ISO_A3"));
 
-        // obtenir les détails ...
-        Geometry ge
+        JSONObject coordJSON = (JSONObject) feat.get("geometry");
 
-                
-        String nom    = (String) persObject.get("nom");
-        String prenom = (String) persObject.get("prenom");
-        String email  = (String) persObject.get("email");
+        String type = (String) coordJSON.get("type");
 
-        // afficher le contenu
-        System.out.println(nom);
-        System.out.println(prenom);
-        System.out.println(email);
+        if (featJSON.get("ADMIN").equals("Anguilla")) {
+            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+            for (Object coord : coords) {
+                JSONArray coordJ = (JSONArray) coord;
+                for (Object c : coordJ){
+                    JSONArray c1 = (JSONArray) c;
+                    System.out.println(c1.size());
+                }
+            }
+        }
+
+        if (type.equals("Polygon")){
+
+        } else if (type.equals("MultiPolygon")){
+            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+            for (Object coord : coords) {
+                JSONArray coordJ = (JSONArray) coord;
+                for (Object c : coordJ){
+                    JSONArray c1 = (JSONArray) c;
+                }
+            }
+        } else {
+            throw new Error("Type mal forme !");
+        }
 
     }
 

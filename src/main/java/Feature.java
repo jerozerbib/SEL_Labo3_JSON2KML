@@ -1,6 +1,6 @@
 
 public class Feature {
 
-    private Properties prozperties;
+    private Properties properties;
     private Geometry geometry;
 }
