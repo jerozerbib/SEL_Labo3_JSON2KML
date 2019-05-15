@@ -41,7 +41,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 public class Application {
 
@@ -66,8 +68,9 @@ public class Application {
         }
     }
 
-    private static void parseFeatureObject(JSONObject feat) {
-        int compteur = 0;
+    private static void parseFeatureObject(JSONObject feat) throws IOException {
+        String filename = "output.kml";
+        PrintWriter pw = new PrintWriter(new FileWriter(filename));
         JSONObject featJSON = (JSONObject) feat.get("properties");
 
         Properties properties = new Properties((String) featJSON.get("ADMIN"), (String) featJSON.get("ISO_A3"));
@@ -76,31 +79,31 @@ public class Application {
 
         String type = (String) coordJSON.get("type");
 
-        if (featJSON.get("ADMIN").equals("Anguilla")) {
-            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
-            for (Object coord : coords) {
-                JSONArray coordJ = (JSONArray) coord;
-                for (Object c : coordJ){
-                    JSONArray c1 = (JSONArray) c;
-                    System.out.println(c1.size());
-                }
-            }
-        }
+        String titre = "(" + properties.getIsoA3() + ") " + properties.getAdmin();
+        pw.println(titre);
 
         if (type.equals("Polygon")){
-
+            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+            for (Object coord: coords){
+                JSONArray coordJ = (JSONArray) coord;
+                String nbCoord = "\t - " + coordJ.size() + " coordinates";
+                System.out.println(coordJ.size());
+                pw.println(nbCoord);
+            }
         } else if (type.equals("MultiPolygon")){
             JSONArray coords = (JSONArray) coordJSON.get("coordinates");
             for (Object coord : coords) {
                 JSONArray coordJ = (JSONArray) coord;
                 for (Object c : coordJ){
                     JSONArray c1 = (JSONArray) c;
+                    String nbCoord = "\t - " + coordJ.size() + " coordinates";
+                    pw.println(nbCoord);
                 }
             }
         } else {
             throw new Error("Type mal forme !");
         }
-
+        pw.flush();
     }
 
 
