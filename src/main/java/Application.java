@@ -53,61 +53,102 @@ import java.io.*;
 public class Application {
 
     public static void main(String[] args) {
-
+        final String filename = "countries.geojson";
         //JSON parser object pour lire le fichier
         JSONParser jsonParser = new JSONParser();
 
-        try (FileReader reader = new FileReader("countries.geojson")) {
+        try (FileReader reader = new FileReader(filename)) {
+
             // lecture du fichier
-            Object obj = jsonParser.parse(reader);
+            Object obj         = jsonParser.parse(reader);
             JSONObject feature = (JSONObject) obj;
+            JSONArray features = (JSONArray) feature.get("features");
 
-            JSONArray jsonArray = (JSONArray) feature.get("features");
-
+            // Construction initiale du KML avec un factory
             final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            final DocumentBuilder builder = factory.newDocumentBuilder();
+            final DocumentBuilder builder        = factory.newDocumentBuilder();
+            final Document document             = builder.newDocument();
 
-            final Document document = builder.newDocument();
-
+            // Creation du tag <kml> avec la version voulue
             final Element kmlTag = document.createElement("kml");
             kmlTag.setAttribute("xmlns", "http://www.opengis.net/kml/2.2");
             document.appendChild(kmlTag);
 
+            // Creation du tag <Document>
             final Element documentTag = document.createElement("Document");
             kmlTag.appendChild(documentTag);
 
-            for (Object feat : jsonArray) {
+            // Creation de la balise <Style> qui permet d'appliquer differents styles suivant les IDs
+            final Element styleTag = document.createElement("Style");
+            styleTag.setAttribute("id", "style1");
+            documentTag.appendChild(styleTag);
+
+            final Element polyStyleTag = document.createElement("PolyStyle");
+            styleTag.appendChild(polyStyleTag);
+
+            final Element fillTag = document.createElement("fill");
+            fillTag.appendChild(document.createTextNode("0"));
+            polyStyleTag.appendChild(fillTag);
+
+            final Element outlineTag = document.createElement("outline");
+            outlineTag.appendChild(document.createTextNode("1"));
+            polyStyleTag.appendChild(outlineTag);
+
+            // Parcours de tous les features
+            for (Object feat : features) {
+                // Creation de la balise <PlaceMark>
                 final Element placeMark = document.createElement("Placemark");
                 documentTag.appendChild(placeMark);
 
-                JSONObject featJ = (JSONObject) feat;
+                // Creation de la balise <styleUrl> permettant d'appliquer un style sur un placemark
+                final Element styleURLTag = document.createElement("styleUrl");
+                styleURLTag.appendChild(document.createTextNode("#style1"));
+                placeMark.appendChild(styleURLTag);
 
+                // Conversion des features de Object vers JSONObject
+                JSONObject featJ    = (JSONObject) feat;
+                // Recuperation des prorietes de l'objet feature
                 JSONObject featJSON = (JSONObject) featJ.get("properties");
-                Properties properties = new Properties((String) featJSON.get("ADMIN"), (String) featJSON.get("ISO_A3"));
-                JSONObject coordJSON = (JSONObject) featJ.get("geometry");
-                String type = (String) coordJSON.get("type");
-                String titre = "(" + properties.getIsoA3() + ") " + properties.getAdmin();
 
+                // Recuperation des valeurs de la propriete.
+                String admin = (String) featJSON.get("ADMIN");
+                String isoA3 = (String) featJSON.get("ISO_A3");
+
+                // Creation de propriete
+                Properties properties = new Properties(admin , isoA3);
+
+                // Entete de la ligne pour la console
+                String titre          = properties.toString();
+                System.out.println(titre);
+
+                JSONObject coordJSON = (JSONObject) featJ.get("geometry");
+                String type          = (String) coordJSON.get("type");
+                JSONArray coords     = (JSONArray) coordJSON.get("coordinates");
+
+                // Ajout de la balise <ExtendedData>
                 Element extData = document.createElement("ExtendedData");
                 placeMark.appendChild(extData);
 
+                // Ajout de la balise <Data> pour ADMIN
                 Element dataAdmin = document.createElement("Data");
                 dataAdmin.setAttribute("name", "ADMIN");
                 extData.appendChild(dataAdmin);
 
-                Element dataISO = document.createElement("Data");
-                dataISO.setAttribute("name", "ISO_A3");
-                extData.appendChild(dataISO);
-
+                // Ajout de la balise <value> contenue dans <Data> de ADMIN
                 Element valueAdmin = document.createElement("value");
                 valueAdmin.appendChild(document.createTextNode(properties.getAdmin()));
                 dataAdmin.appendChild(valueAdmin);
 
+                // Ajout de la balise <Data> pour ISO_A3
+                Element dataISO = document.createElement("Data");
+                dataISO.setAttribute("name", "ISO_A3");
+                extData.appendChild(dataISO);
+
+                // Ajout de la balise <value> contenue dans <Data> de ISO_A3
                 Element valueISO = document.createElement("value");
                 valueISO.appendChild(document.createTextNode(properties.getIsoA3()));
                 dataISO.appendChild(valueISO);
-
-                System.out.println(titre);
+                
                 if (type.equals("Polygon")){
                     Element polygon = document.createElement("Polygon");
                     placeMark.appendChild(polygon);
@@ -120,22 +161,7 @@ public class Application {
 
                     Element coordinates = document.createElement("coordinates");
 
-                    JSONArray coords = (JSONArray) coordJSON.get("coordinates");
-                    for (Object coord: coords){
-                        JSONArray coordJ = (JSONArray) coord;
-                        for (Object o : coordJ) {
-                            StringBuilder sb = new StringBuilder(o.toString());
-                            sb.deleteCharAt(0);
-                            sb.deleteCharAt(sb.length() - 1);
-                            sb.append(" ");
-                            coordinates.appendChild(document.createTextNode(sb.toString()));
-                        }
-                        linearRing.appendChild(coordinates);
-
-                        String nbCoord = "\t - " + coordJ.size() + " coordinates";
-                        System.out.println(nbCoord);
-
-                    }
+                    getCoordinates(document, linearRing, coordinates, coords);
                 } else if (type.equals("MultiPolygon")){
                     Element multiGeometry = document.createElement("MultiGeometry");
                     placeMark.appendChild(multiGeometry);
@@ -149,25 +175,11 @@ public class Application {
                     Element linearRing = document.createElement("LinearRing");
                     outerBoundaryIs.appendChild(linearRing);
 
-                    Element coordinates = document.createElement("coordinates");
-
-                    JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+                    // Parcours obligatoire pour les <MultiGeometry> pour parcourir le premier tableau
                     for (Object coord : coords) {
+                        Element coordinates = document.createElement("coordinates");
                         JSONArray coordJ = (JSONArray) coord;
-                        for (Object c : coordJ){
-                            JSONArray c1 = (JSONArray) c;
-                            for (Object o : c1){
-                                StringBuilder sb = new StringBuilder(o.toString());
-                                sb.deleteCharAt(0);
-                                sb.deleteCharAt(sb.length() - 1);
-                                sb.append(" ");
-                                coordinates.appendChild(document.createTextNode(sb.toString()));
-                            }
-                            linearRing.appendChild(coordinates);
-
-                            String nbCoord = "\t - " + c1.size() + " coordinates";
-                            System.out.println(nbCoord);
-                        }
+                        getCoordinates(document, linearRing, coordinates, coordJ);
                     }
                 } else {
                     throw new Error("Type mal forme !");
@@ -194,6 +206,24 @@ public class Application {
 
         } catch (IOException | ParseException | ParserConfigurationException | TransformerException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void getCoordinates(Document document, Element linearRing, Element coordinates, JSONArray coords) {
+        for (Object coord: coords){
+            JSONArray coordJ = (JSONArray) coord;
+            for (Object o : coordJ) {
+                StringBuilder sb = new StringBuilder(o.toString());
+                sb.deleteCharAt(0);
+                sb.deleteCharAt(sb.length() - 1);
+                sb.append(" ");
+                coordinates.appendChild(document.createTextNode(sb.toString()));
+            }
+            linearRing.appendChild(coordinates);
+
+            String nbCoord = "\t - " + coordJ.size() + " coordinates";
+            System.out.println(nbCoord);
+
         }
     }
 

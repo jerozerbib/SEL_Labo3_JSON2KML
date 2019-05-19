@@ -6,22 +6,28 @@
 
 #### INTRODUCTION
 
-Il a  été question pour nous, pendant ce laboratoire, de parser le fichier JSON (geojson) qui nous a été fournit, puis de créer un fichier KML « Keyhole Markup Langage » sous la base du geojson, qui devra être testé sur l'application Google Earth.
+Il a  été question pour nous, pendant ce laboratoire, de parser le fichier `JSON` (`geojson`) qui nous a été fournit, puis de créer un fichier `KML` « Keyhole Markup Langage » sur la base du geojson, qui devra être testé sur l'application *Google Earth*.
 
-#### choix relatifs à la realisation
+#### Choix relatifs à la realisation
 
-Afin de répondre au mieux aux exigences du cahier des charges, nous avons créé, pour faciliter le parsing du fichier geojson les classes properties et geometry. Elles sont simples et redéfinissent les propriétés properties(Admin, ISOA3) et geometries(Type, Coordinates) d'une feature. L'entier des traitements se fera dans la classe application notamment l'écriture du fichier kml. 
+Afin de répondre au mieux aux exigences du cahier des charges, nous avons créé, pour faciliter le parsing du fichier geojson les classes `Properties`. Leurs implémentations sont simples et redéfinissent les propriétés `Properties(Admin, ISOA3)`. 
+
+Le reste du traitement du fichier `geojson` se fera dans la classe application notamment l'écriture du fichier kml. 
 
 
 #### Les principales difficultés rencontrées dans ce travail.
-  
-Le manque de ligne directive pour cet exercice, a constitué pour nous un léger frein, sinon rien de bien grave. Nous avons eu quelques petits soucis avec l'écriture du document KML et le tracé des lignes lors des tests sur l'application Google Earth. Dans l'ensemble, nous n'avons pas rencontré de difficultés majeures.  
-  
-  
+
+Le manque de ligne directive pour cet exercice, a constitué pour nous un léger frein, sinon rien de bien grave. 
+
+Nous avons eu quelques petits soucis quant à l'écriture du document KML et le tracé des lignes lors des tests sur l'application Google Earth. Cela a pu être résolu en utilisant les balises `<Style>` et `<PolyStyle>`.
+
+Dans l'ensemble, nous n'avons pas rencontré de difficultés majeures.  
+
+
 ##### Copie d’écran de l’affichage lors du parsing du fichier geojson.
 
 (Résultats des premières lignes). 
-  
+
   ``` xml
 (ABW) Aruba
 	 - 26 coordinates
@@ -76,20 +82,27 @@ Le manque de ligne directive pour cet exercice, a constitué pour nous un léger
 	 - 25 coordinates
 	 - 14 coordinates
 	 - 4271 coordinates
+.....
   ```
-  
-  
-##### Copie d’écran après chargement de votre fichier KML dans l’ application GoogleEarth  
 
-  
-  <u>Capture</u>
-  
+
+##### Copie d’écran après chargement de votre fichier KML sur le site internet GoogleEarth  
+
+
+![Capture d'ecran](/home/jeremy/Desktop/Semestre4/SER/Labos/Labo3/screenshot.png)
+
 ##### Nos apprentissages 
- 
+
  * Découverte du format kml.
  * Transformation geojson en kml. 
  * Ecriture d'un document kml.
-  
+
 #### Conclusion
 
-La réalisation de cette exercice nous a permis de découvrir et d'apprendre de nouvelles choses. Nous avons eu de legéres difficultés avec l'écriture du fichier kml et l'absence d'une ligne directive, mais nous sommes tout de même parvenus à obtenir un résultat qui nous sembles tout à fait satisfaisant et répondant aux critères imposés par le cahier des charges. 
+La réalisation de cet exercice nous a permis de découvrir et d'apprendre de nouvelles choses. Nous avons eu de legéres difficultés avec l'écriture du fichier kml en l'absence d'une ligne directive, mais nous sommes tout de même parvenus à obtenir un résultat qui nous semble tout à fait satisfaisant et répondant aux critères imposés par le cahier des charges. 
+
+## Signatures des élèves : 
+
+Jeremy Zerbib
+
+Créscence Ginéle Yimnaing Kamdem
