@@ -57,7 +57,7 @@ public class Application {
         //JSON parser object pour lire le fichier
         JSONParser jsonParser = new JSONParser();
 
-        try (FileReader reader = new FileReader("test.geojson")) {
+        try (FileReader reader = new FileReader("countries.geojson")) {
             // lecture du fichier
             Object obj = jsonParser.parse(reader);
             JSONObject feature = (JSONObject) obj;
@@ -77,7 +77,7 @@ public class Application {
             kmlTag.appendChild(documentTag);
 
             for (Object feat : jsonArray) {
-                final Element placeMark = document.createElement("PlaceMark");
+                final Element placeMark = document.createElement("Placemark");
                 documentTag.appendChild(placeMark);
 
                 JSONObject featJ = (JSONObject) feat;
