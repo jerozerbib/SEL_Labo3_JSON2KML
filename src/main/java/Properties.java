@@ -16,11 +16,4 @@ public class Properties {
         return isoA3;
     }
 
-    public void setAdmin(String admin) {
-        this.admin = admin;
-    }
-
-    public void setIsoA3(String isoA3) {
-        this.isoA3 = isoA3;
-    }
 }
