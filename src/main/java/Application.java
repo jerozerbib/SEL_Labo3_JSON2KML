@@ -39,11 +39,16 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
 
 public class Application {
 
@@ -52,59 +57,144 @@ public class Application {
         //JSON parser object pour lire le fichier
         JSONParser jsonParser = new JSONParser();
 
-        try (FileReader reader = new FileReader("countries.geojson")) {
+        try (FileReader reader = new FileReader("test.geojson")) {
             // lecture du fichier
             Object obj = jsonParser.parse(reader);
             JSONObject feature = (JSONObject) obj;
 
             JSONArray jsonArray = (JSONArray) feature.get("features");
 
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
+
+            final Document document = builder.newDocument();
+
+            final Element kmlTag = document.createElement("kml");
+            kmlTag.setAttribute("xmlns", "http://www.opengis.net/kml/2.2");
+            document.appendChild(kmlTag);
+
+            final Element documentTag = document.createElement("Document");
+            kmlTag.appendChild(documentTag);
+
             for (Object feat : jsonArray) {
-                parseFeatureObject((JSONObject) feat);
+                final Element placeMark = document.createElement("PlaceMark");
+                documentTag.appendChild(placeMark);
+
+                JSONObject featJ = (JSONObject) feat;
+
+                JSONObject featJSON = (JSONObject) featJ.get("properties");
+                Properties properties = new Properties((String) featJSON.get("ADMIN"), (String) featJSON.get("ISO_A3"));
+                JSONObject coordJSON = (JSONObject) featJ.get("geometry");
+                String type = (String) coordJSON.get("type");
+                String titre = "(" + properties.getIsoA3() + ") " + properties.getAdmin();
+
+                Element extData = document.createElement("ExtendedData");
+                placeMark.appendChild(extData);
+
+                Element dataAdmin = document.createElement("Data");
+                dataAdmin.setAttribute("name", "ADMIN");
+                extData.appendChild(dataAdmin);
+
+                Element dataISO = document.createElement("Data");
+                dataISO.setAttribute("name", "ISO_A3");
+                extData.appendChild(dataISO);
+
+                Element valueAdmin = document.createElement("value");
+                valueAdmin.appendChild(document.createTextNode(properties.getAdmin()));
+                dataAdmin.appendChild(valueAdmin);
+
+                Element valueISO = document.createElement("value");
+                valueISO.appendChild(document.createTextNode(properties.getIsoA3()));
+                dataISO.appendChild(valueISO);
+
+                System.out.println(titre);
+                if (type.equals("Polygon")){
+                    Element polygon = document.createElement("Polygon");
+                    placeMark.appendChild(polygon);
+
+                    Element outerBoundaryIs = document.createElement("outerBoundaryIs");
+                    polygon.appendChild(outerBoundaryIs);
+
+                    Element linearRing = document.createElement("LinearRing");
+                    outerBoundaryIs.appendChild(linearRing);
+
+                    Element coordinates = document.createElement("coordinates");
+
+                    JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+                    for (Object coord: coords){
+                        JSONArray coordJ = (JSONArray) coord;
+                        for (Object o : coordJ) {
+                            StringBuilder sb = new StringBuilder(o.toString());
+                            sb.deleteCharAt(0);
+                            sb.deleteCharAt(sb.length() - 1);
+                            sb.append(" ");
+                            coordinates.appendChild(document.createTextNode(sb.toString()));
+                        }
+                        linearRing.appendChild(coordinates);
+
+                        String nbCoord = "\t - " + coordJ.size() + " coordinates";
+                        System.out.println(nbCoord);
+
+                    }
+                } else if (type.equals("MultiPolygon")){
+                    Element multiGeometry = document.createElement("MultiGeometry");
+                    placeMark.appendChild(multiGeometry);
+
+                    Element polygon = document.createElement("Polygon");
+                    multiGeometry.appendChild(polygon);
+
+                    Element outerBoundaryIs = document.createElement("outerBoundaryIs");
+                    polygon.appendChild(outerBoundaryIs);
+
+                    Element linearRing = document.createElement("LinearRing");
+                    outerBoundaryIs.appendChild(linearRing);
+
+                    Element coordinates = document.createElement("coordinates");
+
+                    JSONArray coords = (JSONArray) coordJSON.get("coordinates");
+                    for (Object coord : coords) {
+                        JSONArray coordJ = (JSONArray) coord;
+                        for (Object c : coordJ){
+                            JSONArray c1 = (JSONArray) c;
+                            for (Object o : c1){
+                                StringBuilder sb = new StringBuilder(o.toString());
+                                sb.deleteCharAt(0);
+                                sb.deleteCharAt(sb.length() - 1);
+                                sb.append(" ");
+                                coordinates.appendChild(document.createTextNode(sb.toString()));
+                            }
+                            linearRing.appendChild(coordinates);
+
+                            String nbCoord = "\t - " + c1.size() + " coordinates";
+                            System.out.println(nbCoord);
+                        }
+                    }
+                } else {
+                    throw new Error("Type mal forme !");
+                }
             }
 
-        } catch (IOException | ParseException e) {
+            // Etape 7 : finalisation
+            final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            final Transformer transformer = transformerFactory.newTransformer();
+            final DOMSource source        = new DOMSource(document);
+            final StreamResult sortie     = new StreamResult(new File("src/output.kml"));
+
+            //prologue
+            document.setXmlStandalone(true);
+            document.setXmlVersion("1.0");
+            transformer.setOutputProperty(OutputKeys.ENCODING,   "UTF-8");
+
+            //formatage
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+
+            //sortie
+            transformer.transform(source, sortie);
+
+        } catch (IOException | ParseException | ParserConfigurationException | TransformerException e) {
             e.printStackTrace();
         }
     }
-
-    private static void parseFeatureObject(JSONObject feat) throws IOException {
-        String filename = "output.kml";
-        PrintWriter pw = new PrintWriter(new FileWriter(filename));
-        JSONObject featJSON = (JSONObject) feat.get("properties");
-
-        Properties properties = new Properties((String) featJSON.get("ADMIN"), (String) featJSON.get("ISO_A3"));
-
-        JSONObject coordJSON = (JSONObject) feat.get("geometry");
-
-        String type = (String) coordJSON.get("type");
-
-        String titre = "(" + properties.getIsoA3() + ") " + properties.getAdmin();
-        pw.println(titre);
-
-        if (type.equals("Polygon")){
-            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
-            for (Object coord: coords){
-                JSONArray coordJ = (JSONArray) coord;
-                String nbCoord = "\t - " + coordJ.size() + " coordinates";
-                System.out.println(coordJ.size());
-                pw.println(nbCoord);
-            }
-        } else if (type.equals("MultiPolygon")){
-            JSONArray coords = (JSONArray) coordJSON.get("coordinates");
-            for (Object coord : coords) {
-                JSONArray coordJ = (JSONArray) coord;
-                for (Object c : coordJ){
-                    JSONArray c1 = (JSONArray) c;
-                    String nbCoord = "\t - " + coordJ.size() + " coordinates";
-                    pw.println(nbCoord);
-                }
-            }
-        } else {
-            throw new Error("Type mal forme !");
-        }
-        pw.flush();
-    }
-
 
 }
